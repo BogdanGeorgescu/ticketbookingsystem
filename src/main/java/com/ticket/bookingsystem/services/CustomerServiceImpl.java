@@ -1,6 +1,7 @@
 package com.ticket.bookingsystem.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ticket.bookingsystem.exceptions.CustomerNotFoundException;
 import com.ticket.bookingsystem.models.dtos.CustomerDTO;
 import com.ticket.bookingsystem.models.entities.Customer;
 import com.ticket.bookingsystem.repositories.CustomerRepository;
@@ -21,8 +22,9 @@ public class CustomerServiceImpl implements CustomerService {
 
     public CustomerServiceImpl(ObjectMapper objectMapper, CustomerRepository customerRepository) {
         this.objectMapper = objectMapper;
-        this.customerRepository= customerRepository;
+        this.customerRepository = customerRepository;
     }
+
     @Transactional
     @Override
     public CustomerDTO createCustomer(CustomerDTO customerDTO) {
@@ -30,23 +32,32 @@ public class CustomerServiceImpl implements CustomerService {
         Customer savedCustomer = customerRepository.save(customer);
         log.info("Customer" + savedCustomer.getEmail() + "was created");
         return objectMapper.convertValue(savedCustomer, CustomerDTO.class);
+
     }
 
+
+
+
     @Override
-    public CustomerDTO updateCustomerById(long userId, CustomerDTO customerDTO) {
-        Customer customerFound = customerRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+    public CustomerDTO updateCustomerById(long id, CustomerDTO customerDTO) {
+        Customer customerFound = customerRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
         customerFound.setFirstName(customerDTO.getFirstName());
         customerFound.setSurname(customerDTO.getSurname());
         customerFound.setDateOfBirth(customerDTO.getDateOfBirth());
         customerFound.setEmail(customerDTO.getEmail());
         Customer customerSaved = customerRepository.save(customerFound);
+        log.info("Customer " + id + "was updated successfully");
         return objectMapper.convertValue(customerSaved, CustomerDTO.class);
     }
 
     @Override
     public void deleteCustomerById(long id) {
-        customerRepository.deleteById(id);
-
+        if (customerRepository.existsById(id)) {
+            customerRepository.deleteById(id);
+            log.info("Customer with id " + id + " was deleted successfully.");
+        } else {
+            throw new CustomerNotFoundException("Customer not found.");
+        }
     }
 
     @Override
